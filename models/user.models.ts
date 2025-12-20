@@ -8,7 +8,8 @@ const userSchema = new mongoose.Schema({
     email : {
         type : String,
         required : true
-    }
+    },
+    image : {type : String}
 })
 
 export const User = mongoose.models.User || mongoose.model("User", userSchema);
