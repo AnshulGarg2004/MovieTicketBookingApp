@@ -1,0 +1,156 @@
+'use client'
+
+import BlurCircle from '@/components/blur-circle'
+import DateSelect from '@/components/date-select'
+import MovieCards from '@/components/movie-card'
+import { AnimatedTooltip } from '@/components/ui/animated-tooltip'
+import { movies } from '@/data/movies'
+import { Calendar, Clock, Heart, PlayCircleIcon, Star } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { useParams, useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+
+interface Cast {
+  id: number
+  name: string
+  movieName: string
+  image: string
+}
+
+interface Showtime {
+  id: number
+  date: string
+  times: string[]
+}
+
+interface MovieProps {
+  id: number
+  title: string
+  image: string
+  trailer: string
+  rating: number
+  genre: string
+  release: string
+  duration: string
+  cbf: string
+  description: string
+  casts: Cast[]
+  showtimes: Showtime[]
+}
+
+const MovieId = () => {
+  const { id } = useParams<{ id: string }>()
+  const router = useRouter()
+
+  const [show, setShow] = useState<MovieProps | null>(null)
+  const [isFavourite, setIsFavourite] = useState(false)
+
+  useEffect(() => {
+    const movie = movies.find((m) => m.id === Number(id))
+    // @ts-ignore
+    setShow(movie)
+  }, [id])
+
+  if (!show) {
+    return <div className="text-center mt-40">Loading...</div>
+  }
+
+  return (
+    <div className="px-6 md:px-16 lg:px-40 pt-32">
+
+      {/* MOVIE HEADER */}
+      <div className="flex flex-col gap-8 p-10 mx-auto md:flex-row max-w-6xl mt-20">
+        <Image
+          src={show.image}
+          alt={show.title}
+          width={400}
+          height={300}
+          className="rounded-xl object-cover shadow-xl max-md:mx-auto"
+        />
+
+        <div className="relative flex flex-col gap-3">
+          <BlurCircle top="-100px" left="-100px" />
+
+          <h1 className="text-4xl font-bold my-4">{show.title}</h1>
+
+          <p className="flex items-center gap-2">
+            <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+            {show.rating}
+          </p>
+
+          <p className="text-gray-400 max-w-xl">{show.description}</p>
+
+          <p className="flex items-center gap-4 text-sm text-gray-300">
+            <Clock /> {show.duration}
+            <Calendar /> {show.release}
+          </p>
+
+          <div className="flex gap-4 mt-6 flex-wrap">
+            <button className="flex items-center gap-2 px-6 py-3 bg-neutral-800 hover:bg-neutral-900 rounded-lg transition">
+              <PlayCircleIcon className="w-5 h-5" />
+              Watch Trailer
+            </button>
+
+            <Link
+              href="#dateSelect"
+              className="px-8 py-3 bg-rose-600 hover:bg-rose-700 rounded-lg font-semibold transition"
+            >
+              Book Now
+            </Link>
+
+            <button
+              onClick={() => setIsFavourite(!isFavourite)}
+              className="p-3 rounded-full bg-neutral-700 active:scale-95"
+            >
+              <Heart
+                className={`w-5 h-5 ${
+                  isFavourite ? 'fill-red-500 text-red-500' : ''
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* CASTS */}
+      <h2 className="text-3xl text-center mt-24 mb-10">Casts</h2>
+
+      <div className="flex gap-20 justify-center mb-16">
+        <AnimatedTooltip items={show.casts.slice(0, 10)} />
+      </div>
+
+      {/* DATE & TIME SELECTION */}
+      <DateSelect movieId={show.id} showtimes={show.showtimes} />
+
+      {/* RECOMMENDED MOVIES */}
+      <div className="mt-24 mb-20">
+        <h2 className="text-2xl font-bold text-center mb-10">
+          You may also like
+        </h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
+          {movies.slice(0, 4).map((movie) => (
+            <MovieCards key={movie.id} movies={movie} />
+          ))}
+        </div>
+      </div>
+
+      {/* SHOW MORE */}
+      <div className="flex justify-center mb-40">
+        <button
+          onClick={() => {
+            router.push('/movies')
+            window.scrollTo({ top: 0, behavior: 'smooth' })
+          }}
+          className="px-10 py-4 rounded-xl bg-gradient-to-r from-rose-600 to-rose-700
+          text-white font-semibold shadow-lg hover:from-rose-700 hover:to-rose-800 transition"
+        >
+          Show More
+        </button>
+      </div>
+    </div>
+  )
+}
+
+export default MovieId

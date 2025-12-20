@@ -1,0 +1,92 @@
+export const Dashboard = {
+    totalBookings: 10,
+    totalRevenue: `₹ 1070`,
+    activeMovies: [
+        {
+            id: 1,
+            title: "Avtar: Fire and Ash",
+            image: "https://assets-in.bmscdn.com/discovery-catalog/events/et00407893-rnwztnayab-landscape.jpg",
+            trailer: "ABCGDEORMW74182",
+            rating: 9.2,
+            genre: "Action | Adventure | Sci-Fi | Fantasy",
+            release: "2025",
+            duration: "3h 17m",
+            cbf: "UA16+",
+            currency : "220",
+            description: "The biggest film in the world, the ultimate cinematic experience and spectacle, goes even bigger with Avatar: Fire and Ash. In the aftermath of great loss, Jake Sully and Neytiri confront a new and dangerous force on Pandora. As tensions rise, their family`s strength and unity are tested like never before.",
+        },
+        {
+            id: 2,
+            title: "Tere Ishq Mein",
+            image: "https://assets-in.bmscdn.com/discovery-catalog/events/et00362760-yzjjelfemy-landscape.jpg",
+            trailer: "9AJsFRNJGZ8",
+            rating: 8.9,
+            genre: "Drama | Romance",
+            release: "2025",
+            duration: "2h 49m",
+            cbf: "UA16+",
+            currency : "220",
+            description: "Some souls are meant to collide. Some love stories are destined to burn brighter.",
+
+        },
+        {
+            id: 3,
+            title: "Kis Kisko Pyaar Karoon 2",
+            image: "https://assets-in.bmscdn.com/iedb/movies/images/mobile/listing/medium/kis-kisko-pyaar-karoon-2-et00440208-1764654447.jpg",
+            trailer: "Eb9fIMlIiyc",
+            rating: 8.1,
+            genre: "Comedy | Drama | Romantic",
+            release: "2025",
+            duration: "2h 22m",
+            cbf: "UA16+",
+            currency : "220",
+            description: "Mohan Sharma's search for true love goes haywire when every attempt to marry Saniya Mirza ends with him accidentally marrying someone else. In a string of comic twists, he ends up with three wives from three different faiths Hindu, Muslim, and Christian; struggles to balance their expectations while keeping his triple life a secret.Just when he thinks he has adjusted to the chaos, Saniya returns as Simran, a Sikh woman, forcing Mohan to confront the mess he created. Now he must untangle his marriages and prove his love to Simran before his world collapses again.",
+
+
+        },
+        {
+            id: 4,
+            title: "Dhurandhar",
+            image: "https://www.bollywoodhungama.com/wp-content/uploads/2025/06/Dhurandhar-cover-image129.jpg",
+            trailer: "BKOVzHcjEIo",
+            rating: 9.3,
+            genre: "Action | Adventure | Sci-Fi | Fantasy",
+            release: "2025",
+            duration: "3h 34m",
+            cbf: "A",
+            currency : "220",
+            description: "Dhurandhar is a genre-bending, edge-of-the-seat action thriller with big stars playing iconic characters. Told with audacious swagger, the story follows a mysterious traveller as he slips into the heart of Karachi's underbelly and rises through its ranks with lethal precision, only to tear the notorious ISI-Underworld nexus apart from within.",
+
+
+        },
+        {
+            id: 5,
+            title: "Zootopia 2",
+            image: "https://assets-in.bmscdn.com/discovery-catalog/events/et00441877-jwrggfjrbz-landscape.jpg",
+            trailer: "BjkIOU5PhyQ",
+            rating: 9.1,
+            genre: "Action | Adventure | Comedy",
+            release: "2025",
+            duration: "1h 48m",
+            cbf: "UA7+",
+            currency : "220",
+            description: "Get ready to race back into the wild, colorful world of Zootopia, where animals talk, hustle, and chase their dreams - just like us!Whether you loved the first Zootopia or are diving in for the first time, this is one ride you don't want to miss!",
+
+
+        },
+        {
+            id: 6,
+            title: "De De pyaar De 2",
+            image: "https://assets-in.bmscdn.com/iedb/movies/images/mobile/listing/medium/de-de-pyaar-de-2-et00391156-1765050384.jpg",
+            trailer: "59aIp7SfIIk",
+            rating: 8.3,
+            genre: "Comedy | Romantic",
+            release: "2025",
+            duration: "2h 27m",
+            cbf: "UA13+",
+            currency : "220",
+            description: "In De De Pyaar De 2, love faces its toughest test yet as Ashish visits Ayesha's family home! Will the age-gap romance win hearts or stir things up? With heart, humour, and a whole lot of family madness, the Pyaar vs. Parivaar clash promises a relatable, riotous ride for every kind of audience.",
+        },
+    ],
+    totalUser: 5
+}
