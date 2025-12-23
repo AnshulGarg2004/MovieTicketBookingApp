@@ -4,12 +4,17 @@ import BlurCircle from '@/components/blur-circle'
 import DateSelect from '@/components/date-select'
 import MovieCards from '@/components/movie-card'
 import { AnimatedTooltip } from '@/components/ui/animated-tooltip'
-import { movies } from '@/data/movies'
 import { Calendar, Clock, Heart, PlayCircleIcon, Star } from 'lucide-react'
+import { toast } from 'sonner'
 import Image from 'next/image'
+import { movies } from '@/data/movies'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import axios from 'axios'
+import { auth } from '@clerk/nextjs/server'
+import { useAuth } from '@clerk/nextjs'
+import { getFavourites } from '@/utils/user'
 
 interface Cast {
   id: number
@@ -18,14 +23,16 @@ interface Cast {
   image: string
 }
 
+interface TimeEntry { time: string; showId: string; cost: number }
+
 interface Showtime {
-  id: number
+  id: string
   date: string
-  times: string[]
+  times: TimeEntry[]
 }
 
 interface MovieProps {
-  id: number
+  _id: string
   title: string
   image: string
   trailer: string
@@ -46,10 +53,42 @@ const MovieId = () => {
   const [show, setShow] = useState<MovieProps | null>(null)
   const [isFavourite, setIsFavourite] = useState(false)
 
+  const handleFavourite = async () => {
+    const user = await auth();
+    const { getToken } = useAuth();
+    const token = await getToken();
+
+    try {
+      if (!user) {
+        return toast.error("😒Login first");
+      }
+      const { data } = await axios.post('/api/favorites', { movieId: id }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (data.success) {
+        await getFavourites();
+        toast.success("Added to favouites");
+      }
+    } catch (error) {
+      return toast.error("Internal server error");
+    }
+  }
+
   useEffect(() => {
-    const movie = movies.find((m) => m.id === Number(id))
-    // @ts-ignore
-    setShow(movie)
+    if (!id) return
+    const load = async () => {
+      try {
+        const { data } = await axios.get(`/api/get-shows/${id}`)
+        if (data.success) {
+          setShow(data);
+        }
+      } catch (e) {
+        return toast.error('Failed to fetch movie')
+      }
+    }
+
+    load()
   }, [id])
 
   if (!show) {
@@ -104,9 +143,8 @@ const MovieId = () => {
               className="p-3 rounded-full bg-neutral-700 active:scale-95"
             >
               <Heart
-                className={`w-5 h-5 ${
-                  isFavourite ? 'fill-red-500 text-red-500' : ''
-                }`}
+                className={`w-5 h-5 ${isFavourite ? 'fill-rose-500 text-rose-500' : 'text-white'
+                  }`}
               />
             </button>
           </div>
@@ -121,7 +159,7 @@ const MovieId = () => {
       </div>
 
       {/* DATE & TIME SELECTION */}
-      <DateSelect movieId={show.id} showtimes={show.showtimes} />
+      <DateSelect movieId={show._id} showtimes={show.showtimes} />
 
       {/* RECOMMENDED MOVIES */}
       <div className="mt-24 mb-20">

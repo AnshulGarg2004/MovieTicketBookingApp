@@ -2,7 +2,11 @@
 import Title from '@/components/admin/title';
 import Loading from '@/components/loading';
 import { bookingData } from '@/data/booking';
+import { useAuth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
+import axios from 'axios';
 import React, { useEffect, useState } from 'react'
+import { toast } from 'sonner';
 
 interface BookingProps {
     id: number,
@@ -16,17 +20,35 @@ interface BookingProps {
     cost: string
 }
 
-const Bookings = () => {
+const Bookings = async() => {
 
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [bookings, setBookings] = useState<BookingProps[]>([]);
 
-    const getbookings = () => {
-        setBookings(bookingData);
-        setIsLoading(false);
+    const user = await auth();
+    const {getToken} =  useAuth();
+    const token = await getToken();
+
+    const getbookings = async() => {
+        try {
+            const {data} = await axios.get('/api/admin/bookings', {
+                headers : {Authorization : `Bearer ${token}`                }
+            })
+
+            if(data.success) {
+                setBookings(data.booking);
+                setIsLoading(false);
+            }
+        } catch (error) {
+            return toast.error("Cannot get booking data");
+        }
     }
 
-    useEffect(() => { getbookings(); }, []);
+    useEffect(() => { 
+        if(user) {
+            getbookings();
+        }
+    }, [user]);
     return !isLoading ? (
         <>
             <Title first='Admin' second='Bookings' />

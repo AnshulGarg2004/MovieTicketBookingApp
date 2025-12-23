@@ -1,16 +1,29 @@
 
+'use client'
 import { useClerk, UserButton, useUser } from '@clerk/nextjs';
+import axios from 'axios';
 import { MenuIcon, SearchIcon, TicketIcon, XIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation';
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react'
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useUser();
   const { openSignIn } = useClerk();
   const router = useRouter();
+
+  const [favourites, setFavourites] = useState([]);
+
+  useEffect(() => {
+    const fetchShows = async () => {
+      const { data } = await axios.get('/api/favorites');
+      if (data.success) {
+        setFavourites(data.favourite.map((s: any) => s.movie));
+      }
+    }
+    fetchShows();
+  }, [])
 
   return (
     <div className='fixed top-0 left-0 w-full flex  items-center justify-between z-50 px-6 md:px-16 lg:px-36 py-6'>
@@ -24,7 +37,7 @@ const Navbar = () => {
         <Link onClick={() => { scrollTo(0, 0); setIsOpen(false) }} href="/movies" className='mx-4  md:inline-block cursor-pointer hover:text-gray-500 transition'>Movies</Link>
         <Link onClick={() => { scrollTo(0, 0); setIsOpen(false) }} href="/threatre" className='mx-4  md:inline-block cursor-pointer hover:text-gray-500 transition'>Threatre</Link>
         <Link onClick={() => { scrollTo(0, 0); setIsOpen(false) }} href="/releases" className='mx-4  md:inline-block cursor-pointer hover:text-gray-500 transition'>Releases</Link>
-        <Link onClick={() => { scrollTo(0, 0); setIsOpen(false) }} href="/favourites" className='mx-4  md:inline-block cursor-pointer hover:text-gray-500 transition'>Favourites</Link>
+        {favourites.length !== 0 && <Link onClick={() => { scrollTo(0, 0); setIsOpen(false) }} href="/favourites" className='mx-4  md:inline-block cursor-pointer hover:text-gray-500 transition'>Favourites</Link>}
       </div>
       <div className='flex justify-between items-center gap-8'>
         <SearchIcon className=' max-md:ml-4 w-6 h-6 cursor-pointer' />
@@ -35,7 +48,7 @@ const Navbar = () => {
           ) : (
             <UserButton >
               <UserButton.MenuItems>
-                <UserButton.Action label='My Bookings' onClick={() => router.push("/my-bookings")} labelIcon={<TicketIcon />}/>
+                <UserButton.Action label='My Bookings' onClick={() => router.push("/my-bookings")} labelIcon={<TicketIcon />} />
               </UserButton.MenuItems>
             </UserButton>
           )

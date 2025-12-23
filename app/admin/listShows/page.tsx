@@ -2,6 +2,9 @@
 import Title from '@/components/admin/title';
 import Loading from '@/components/loading';
 import { Dashboard } from '@/data/dashboard';
+import { useAuth } from '@clerk/nextjs';
+import { auth } from '@clerk/nextjs/server';
+import axios from 'axios';
 import React, { useEffect, useState } from 'react'
 
 interface ActiveMovie {
@@ -26,16 +29,30 @@ interface DashboardProps {
     totalUser: number
 }
 
-const ListShows = () => {
+const ListShows = async() => {
     const [shows, setShows] = useState<ActiveMovie[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
-    const getShows = () => {
-        setShows(Dashboard.activeMovies);
-        setIsLoading(false);
-    };
+    const getShows = async() => {
+        try {
+           const {data} = await axios.get('api/admin/shows', {
+            headers : {Authorization: `Bearer ${token}`}
+           })
 
-    useEffect(() => { getShows(); }, []);
+           setShows(data.show);
+           setIsLoading(false);
+        } catch (error) {
+            
+        }
+    };
+    const user = await auth();
+    const {getToken} =  useAuth();
+    const token = await getToken();
+    useEffect(() => { 
+        if(user) {
+            getShows();
+        }
+     }, [user]);
 
     return !isLoading ?  (
         <>

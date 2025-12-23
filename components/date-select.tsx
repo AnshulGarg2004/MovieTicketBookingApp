@@ -5,20 +5,21 @@ import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 
+interface TimeEntry { time: string; showId: string; cost: number }
 interface Showtime {
-  id: number
+  id: string
   date: string
-  times: string[]
+  times: TimeEntry[]
 }
 
 interface DateSelectProps {
-  movieId: number
+  movieId: string | number
   showtimes: Showtime[]
 }
 
 const DateSelect = ({ movieId, showtimes = [] }: DateSelectProps) => {
   const [selectedShow, setSelectedShow] = useState<Showtime | null>(null)
-  const [selectedTime, setSelectedTime] = useState<string | null>(null)
+  const [selectedTime, setSelectedTime] = useState<TimeEntry | null>(null)
   const router = useRouter()
 
   const handleBookNow = () => {
@@ -27,8 +28,9 @@ const DateSelect = ({ movieId, showtimes = [] }: DateSelectProps) => {
       return
     }
 
+    // include the concrete showId for booking
     router.push(
-      `/movies/${movieId}/bookTicket/${selectedShow.id}?date=${selectedShow.date}&time=${selectedTime}`
+      `/movies/${movieId}/bookTicket/${selectedShow.id}?date=${selectedShow.date}&time=${selectedTime.time}&showId=${selectedTime.showId}`
     )
   }
 
@@ -99,19 +101,19 @@ const DateSelect = ({ movieId, showtimes = [] }: DateSelectProps) => {
       {/* Time selector */}
       {selectedShow && (
         <div className="mt-6 flex justify-center gap-4 flex-wrap">
-          {selectedShow.times.map((time) => (
+          {selectedShow.times.map((t) => (
             <button
-              key={time}
-              onClick={() => setSelectedTime(time)}
+              key={t.showId}
+              onClick={() => setSelectedTime(t)}
               className={`
                 px-5 py-2 rounded-lg border transition-all
-                ${selectedTime === time
+                ${selectedTime?.showId === t.showId
                   ? 'bg-rose-600 border-rose-600 text-white'
                   : 'bg-zinc-900 border-zinc-700 text-zinc-300 hover:bg-zinc-800'
                 }
               `}
             >
-              {time}
+              {t.time}
             </button>
           ))}
         </div>

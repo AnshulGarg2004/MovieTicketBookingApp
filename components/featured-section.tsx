@@ -1,14 +1,30 @@
-'use client'
+
 import { ArrowRight } from 'lucide-react'
 import { useRouter } from 'next/navigation';
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import BlurCircle from './blur-circle';
 import MovieCards from './movie-card';
 import Trailers from './trailer';
-import { movies } from '@/data/movies';
+import axios from 'axios';
+import { toast } from 'sonner';
 
-const FeaturedSection = () => {
+const FeaturedSection = async () => {
     const router = useRouter();
+    const [shows, setShows] = useState([]);
+    useEffect(() => {
+        const fetchShows = async() => {
+            try {
+                const {data} = await axios.get("/api/get-shows");
+                if(data.success) {
+                    setShows(data.show.map((show : any) => (show.movie)));
+
+                }
+            } catch (error) {
+              return toast.error("Error fetching shows");  
+            }
+        }
+        fetchShows();
+    }, []);
     return (
         <div className='px-6 md:px-20 xl:px-44 overflow-hidden'>
             <div className='relative flex items-center justify-between pt-20 pb-10'>
@@ -19,13 +35,13 @@ const FeaturedSection = () => {
             <BlurCircle top='-10px' left='-80px' />
             <div className='group grid grid-cols-3 max-sm:justify-center gap-8 mt-8'>
                 {
-                    movies.slice(0, 6).map((movie) => (
-                        <MovieCards key={movie.id} movies={movie} />
+                    shows.slice(0, 6).map((movie, idx) => (
+                        <MovieCards key={idx} movies={movie} />
                     ))
                 }
             </div>
             <div>
-                <button onClick={() => {router.push("/movies"); scrollTo(0,0)}} className='px-10 py-5 rounded-md transition text-sm cursor-pointer font-medium bg-blue-500 hover:bg-blue-700'>Show More</button>
+                <button onClick={() => { router.push("/movies"); scrollTo(0, 0) }} className='px-10 py-5 rounded-md transition text-sm cursor-pointer font-medium bg-blue-500 hover:bg-blue-700'>Show More</button>
             </div>
 
             <div>

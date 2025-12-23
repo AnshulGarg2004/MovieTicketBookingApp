@@ -2,6 +2,9 @@
 import Title from '@/components/admin/title'
 import Loading from '@/components/loading'
 import { Dashboard } from '@/data/dashboard'
+import { useAuth } from '@clerk/nextjs'
+import { auth } from '@clerk/nextjs/server'
+import axios from 'axios'
 import { CheckIcon, StarIcon } from 'lucide-react'
 import Image from 'next/image'
 import React, { useEffect, useState } from 'react'
@@ -25,17 +28,34 @@ type DateTimeSelection = {
   [date: string]: string[]
 }
 
-const AddShows = () => {
+const AddShows =async () => {
   const [nowPlaying, setNowPlaying] = useState<ActiveMovie[]>([])
   const [selectedMovie, setSelectedMovie] = useState<number | null>(null)
   const [dateTimeSelection, setDateTimeSelection] = useState<DateTimeSelection>({})
   const [selectedDate, setSelectedDate] = useState('')
   const [selectedTime, setSelectedTime] = useState('')
   const [showPrice, setShowPrice] = useState<number>(0)
+  const [addingShow, setAddingShow] = useState(false);
 
-  useEffect(() => {
-    setNowPlaying(Dashboard.activeMovies)
-  }, [])
+  const {getToken} = useAuth();
+      const token = getToken();
+
+  const fetchNowPlaying = async() => {
+    try {
+      
+      const {data} = await axios.get('/api/get-now-playing', {
+        headers : {Authorization : `Bearer ${token}`}
+      })
+
+      if(data.success) {
+        setNowPlaying(data.movie);
+      }
+    } catch (error) {
+      console.error("Error in fetching movies", error);
+      
+    }
+  }
+
 
   const handleDateTimeAdd = () => {
     if (!selectedDate || !selectedTime) {
@@ -52,6 +72,14 @@ const AddShows = () => {
     setSelectedTime('')
   }
 
+  const user = await auth();
+
+  useEffect(() => {
+    if(user) {
+      fetchNowPlaying();
+    }
+  }, [user])
+
   const handleRemoveTime = (date: string, time: string) => {
     setDateTimeSelection(prev => {
       const filtered = prev[date].filter(t => t !== time)
@@ -61,6 +89,43 @@ const AddShows = () => {
       }
       return { ...prev, [date]: filtered }
     })
+  }
+
+  const handleSubmit  =async() => {
+    try {
+      setAddingShow(true);
+      if(!selectedMovie || Object.keys(dateTimeSelection).length === 0 || !showPrice) {
+        return toast.error("😒Missing required fields");
+      }
+
+      const showInput = Object.entries(dateTimeSelection).map(([date, time]) => ({
+        date, time
+      }));
+
+      const payload = {
+        movieId : selectedMovie,
+        showInput,
+        showPrice : Number(showPrice)
+      }
+
+      const {data} = await axios.post('/api/add-show', payload, {
+        headers : {Authorization : `Bearer ${token}`}
+      })
+
+      if(data.success) {
+         toast.success("🎉 Data added successfully");
+         setSelectedMovie(null);
+         setDateTimeSelection({});
+         setShowPrice(0);
+      }
+      else {
+        return toast.error("Error in adding data");
+      }
+    } catch (error) {
+      console.error("Submission error: ", error);
+      return toast.error("Internal server error");
+    }
+    setAddingShow(false);
   }
 
   if (nowPlaying.length === 0) return <Loading />
@@ -183,7 +248,7 @@ const AddShows = () => {
         </div>
 
       </div>
-      <button className='bg-rose-500 text-white px-8 py-2 mt-6 rounded hover:
+      <button onClick={handleSubmit} disabled={addingShow} className='bg-rose-500 text-white px-8 py-2 mt-6 rounded hover:
       bg-rose-500/90 transition-all cursor-pointer'>Add Show</button>
     </>
   )
