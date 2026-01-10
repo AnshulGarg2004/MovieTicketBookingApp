@@ -42,6 +42,10 @@ interface MovieProps {
   description: string
   casts: Cast[]
   showtimes: Showtime[]
+  // 'shows' comes from /api/get-shows/[id] as a map of date -> TimeEntry[]
+  shows?: {
+    [date: string]: { time: string; id: string; cost: number }[]
+  }
 }
 
 const MovieId = () => {
@@ -165,21 +169,26 @@ const MovieId = () => {
       {/* DATE & TIME SELECTION */}
       {(() => {
         console.log('Show data:', show);
-        console.log('Show.shows:', show.shows);
-        return show.shows && Object.keys(show.shows).length > 0 ? (
-          <DateSelect 
-            movieId={show._id} 
-            showtimes={Object.entries(show.shows).map(([date, times]: [string, any]) => ({
-              id: date,
-              date,
-              times: times.map((t: any) => ({
-                time: t.time,
-                showId: t.id,
-                cost: t.cost
-              }))
-            }))}
-          />
-        ) : (
+        const shows = show?.shows;
+        console.log('Show.shows:', shows);
+        if (shows && Object.keys(shows).length > 0) {
+          return (
+            <DateSelect
+              movieId={show!._id}
+              showtimes={Object.entries(shows).map(([date, times]: [string, any]) => ({
+                id: date,
+                date,
+                times: times.map((t: any) => ({
+                  time: t.time,
+                  showId: t.id,
+                  cost: t.cost
+                }))
+              }))}
+            />
+          )
+        }
+
+        return (
           <div className="text-center py-10">
             <p className="text-gray-400">No showtimes available for this movie</p>
             <p className="text-sm text-gray-500 mt-2">This movie needs to be added through the admin panel to have showtimes</p>
