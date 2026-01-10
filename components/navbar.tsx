@@ -18,8 +18,8 @@ const Navbar = () => {
   useEffect(() => {
     const fetchShows = async () => {
       const { data } = await axios.get('/api/favorites');
-      if (data.success) {
-        setFavourites(data.favourite.map((s: any) => s.movie));
+      if (data.success && data.movies) {
+        setFavourites(data.movies.map((s: any) => s.movie));
       }
     }
     fetchShows();

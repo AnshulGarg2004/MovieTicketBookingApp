@@ -3,7 +3,6 @@ import Title from '@/components/admin/title';
 import Loading from '@/components/loading';
 import { Dashboard } from '@/data/dashboard';
 import { useAuth } from '@clerk/nextjs';
-import { auth } from '@clerk/nextjs/server';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react'
 
@@ -29,30 +28,30 @@ interface DashboardProps {
     totalUser: number
 }
 
-const ListShows = async() => {
+const ListShows = () => {
     const [shows, setShows] = useState<ActiveMovie[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
+    const { getToken, isSignedIn } = useAuth();
 
-    const getShows = async() => {
+    const getShows = async () => {
         try {
-           const {data} = await axios.get('api/admin/shows', {
-            headers : {Authorization: `Bearer ${token}`}
-           })
+            const token = await getToken();
+            const { data } = await axios.get('/api/admin/shows', {
+                headers: { Authorization: `Bearer ${token}` }
+            })
 
-           setShows(data.show);
-           setIsLoading(false);
+            setShows(data.show);
+            setIsLoading(false);
         } catch (error) {
-            
+            setIsLoading(false);
         }
     };
-    const user = await auth();
-    const {getToken} =  useAuth();
-    const token = await getToken();
-    useEffect(() => { 
-        if(user) {
+
+    useEffect(() => {
+        if (isSignedIn) {
             getShows();
         }
-     }, [user]);
+    }, [isSignedIn]);
 
     return !isLoading ?  (
         <>

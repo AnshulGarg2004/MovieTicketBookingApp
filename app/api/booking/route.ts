@@ -4,11 +4,19 @@ import connectDB from "@/config/connectDb";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { stripe } from "@/lib/stripe";
-import { inngest } from "@/inngest/client";
 
 export async function POST(req: NextRequest) {
   try {
     await connectDB();
+    console.log("Booking API called");
+
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
     const {
       showId,
@@ -21,14 +29,7 @@ export async function POST(req: NextRequest) {
       showDateTime,
     } = await req.json();
 
-    // 🔐 Clerk Auth
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, message: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    console.log("Booking data:", { showId, seats, movieId, ticketQty });
 
     if (!showId || !Array.isArray(seats) || seats.length === 0) {
       return NextResponse.json(
@@ -40,6 +41,8 @@ export async function POST(req: NextRequest) {
     /**
      * 1️⃣ ATOMIC SEAT LOCKING (NO DOUBLE BOOKING)
      */
+    console.log("Checking seat availability for:", seats);
+    
     const seatQuery = seats.reduce((q: any, seat: string) => {
       q[`occupiedSeats.${seat}`] = { $ne: true };
       return q;
@@ -49,6 +52,9 @@ export async function POST(req: NextRequest) {
       u[`occupiedSeats.${seat}`] = true;
       return u;
     }, {});
+
+    console.log("Seat query:", seatQuery);
+    console.log("Seat update:", seatUpdate);
 
     const show = await Showtime.findOneAndUpdate(
       {
@@ -61,6 +67,8 @@ export async function POST(req: NextRequest) {
       { new: true }
     ).lean();
 
+    console.log("Show found:", !!show);
+
     if (!show) {
       return NextResponse.json(
         { success: false, message: "Selected seats already booked" },
@@ -71,6 +79,15 @@ export async function POST(req: NextRequest) {
     /**
      * 2️⃣ CREATE BOOKING (AFTER SEATS ARE LOCKED)
      */
+    console.log("Creating booking with data:", {
+      movie: movieId,
+      showtime: showId,
+      userId,
+      ticketQty,
+      seats,
+      cost: Number(show.cost) * seats.length
+    });
+    
     const booking = await Booking.create({
       movie: movieId,
       showtime: showId,
@@ -85,6 +102,13 @@ export async function POST(req: NextRequest) {
       showDateTime,
     });
 
+    console.log("Booking created:", booking._id);
+    console.log("Creating Stripe session with cost:", Number(show.cost));
+
+    if (!process.env.STRIPE_SECRET_KEY) {
+      throw new Error("STRIPE_SECRET_KEY not configured");
+    }
+
      const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
@@ -93,7 +117,7 @@ export async function POST(req: NextRequest) {
           price_data: {
             currency: "inr",
             product_data: {
-              name: movieTitle,
+              name: movieTitle || "Movie Ticket",
             },
             unit_amount: Number(show.cost) * 100,
           },
@@ -103,20 +127,16 @@ export async function POST(req: NextRequest) {
       metadata: {
         bookingId: booking._id.toString(),
       },
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment-success?bookingId=${booking._id}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/payment-cancel?bookingId=${booking._id}`,
-      expires_at : Math.floor(Date.now() / 1000) + 15 * 60, // 15 minutes from now
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/my-bookings`,
+      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/movies`,
+      expires_at : Math.floor(Date.now() / 1000) + 30 * 60, // 30 minutes from now
     });
+
+    console.log("Stripe session created:", session.id);
+    console.log("Stripe URL:", session.url);
 
     booking.paymentLink = session.url!;
     await booking.save();
-
-    await inngest.send({
-      name : "app/checkpayment",
-      data : {
-        bookigId : booking._id.toString(),
-      }
-    })
 
     return NextResponse.json(
       {
@@ -128,6 +148,7 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error: any) {
+    console.error("Booking API error:", error.message);
     return NextResponse.json(
       { success: false, message: error.message },
       { status: 500 }

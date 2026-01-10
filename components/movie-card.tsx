@@ -9,7 +9,7 @@ const MovieCards = ({movies}) => {
     const router =  useRouter();
   return (
     <div className='flex flex-col justify-between gap-4 p-3 bg-gray-800 rounded-2xl hover:-translate-y-1 transition duration-300 w-70'>
-      <Image onClick={() => {router.push(`/movies/${movies.id}`); scrollTo(0,0)}} src={movies.image} alt={movies.title} width={200} height={300} className='rounded-lg w-full h-55 object-cover object-fit cursor-pointer' />
+      <Image onClick={() => {router.push(`/movies/${movies.id}`); scrollTo(0,0)}} src={movies.image} alt={movies.title || 'Movie poster'} width={200} height={300} className='rounded-lg w-full h-55 object-cover object-fit cursor-pointer' />
         <p className='mt-2 truncate font-semibold'>{movies.title}</p>
 
         <p className=''>{new Date(movies.release).getFullYear()} • {movies.genre} • {movies.duration} </p>

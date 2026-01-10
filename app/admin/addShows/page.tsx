@@ -3,7 +3,6 @@ import Title from '@/components/admin/title'
 import Loading from '@/components/loading'
 import { Dashboard } from '@/data/dashboard'
 import { useAuth } from '@clerk/nextjs'
-import { auth } from '@clerk/nextjs/server'
 import axios from 'axios'
 import { CheckIcon, StarIcon } from 'lucide-react'
 import Image from 'next/image'
@@ -28,34 +27,34 @@ type DateTimeSelection = {
   [date: string]: string[]
 }
 
-const AddShows =async () => {
+const AddShows = () => {
   const [nowPlaying, setNowPlaying] = useState<ActiveMovie[]>([])
   const [selectedMovie, setSelectedMovie] = useState<number | null>(null)
   const [dateTimeSelection, setDateTimeSelection] = useState<DateTimeSelection>({})
   const [selectedDate, setSelectedDate] = useState('')
   const [selectedTime, setSelectedTime] = useState('')
   const [showPrice, setShowPrice] = useState<number>(0)
-  const [addingShow, setAddingShow] = useState(false);
+  const [addingShow, setAddingShow] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  const {getToken} = useAuth();
-      const token = getToken();
+  const { getToken, isSignedIn } = useAuth()
 
-  const fetchNowPlaying = async() => {
+  const fetchNowPlaying = async () => {
     try {
-      
-      const {data} = await axios.get('/api/get-now-playing', {
-        headers : {Authorization : `Bearer ${token}`}
-      })
+      const { data } = await axios.get('/api/get-now-playing')
 
-      if(data.success) {
-        setNowPlaying(data.movie);
+      if (data.success) {
+        setNowPlaying(data.movie)
+        console.log('Movies loaded:', data.movie.length)
+      } else {
+        console.error('API returned error:', data.message)
       }
-    } catch (error) {
-      console.error("Error in fetching movies", error);
-      
+    } catch (error: any) {
+      console.error("Error in fetching movies:", error.response?.data || error.message)
+    } finally {
+      setLoading(false)
     }
   }
-
 
   const handleDateTimeAdd = () => {
     if (!selectedDate || !selectedTime) {
@@ -72,13 +71,9 @@ const AddShows =async () => {
     setSelectedTime('')
   }
 
-  const user = await auth();
-
   useEffect(() => {
-    if(user) {
-      fetchNowPlaying();
-    }
-  }, [user])
+    fetchNowPlaying();
+  }, [])
 
   const handleRemoveTime = (date: string, time: string) => {
     setDateTimeSelection(prev => {
@@ -91,10 +86,10 @@ const AddShows =async () => {
     })
   }
 
-  const handleSubmit  =async() => {
+  const handleSubmit = async () => {
     try {
       setAddingShow(true);
-      if(!selectedMovie || Object.keys(dateTimeSelection).length === 0 || !showPrice) {
+      if (!selectedMovie || Object.keys(dateTimeSelection).length === 0 || !showPrice) {
         return toast.error("😒Missing required fields");
       }
 
@@ -103,20 +98,21 @@ const AddShows =async () => {
       }));
 
       const payload = {
-        movieId : selectedMovie,
+        movieId: selectedMovie,
         showInput,
-        showPrice : Number(showPrice)
+        showPrice: Number(showPrice)
       }
 
-      const {data} = await axios.post('/api/add-show', payload, {
-        headers : {Authorization : `Bearer ${token}`}
+      const token = await getToken();
+      const { data } = await axios.post('/api/add-shows', payload, {
+        headers: { Authorization: `Bearer ${token}` }
       })
 
-      if(data.success) {
-         toast.success("🎉 Data added successfully");
-         setSelectedMovie(null);
-         setDateTimeSelection({});
-         setShowPrice(0);
+      if (data.success) {
+        toast.success("🎉 Data added successfully");
+        setSelectedMovie(null);
+        setDateTimeSelection({});
+        setShowPrice(0);
       }
       else {
         return toast.error("Error in adding data");
@@ -128,7 +124,7 @@ const AddShows =async () => {
     setAddingShow(false);
   }
 
-  if (nowPlaying.length === 0) return <Loading />
+  if (loading) return <Loading />
 
   return (
     <>

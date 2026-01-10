@@ -6,7 +6,7 @@ const showtimeSchema = new mongoose.Schema({
             required: true,
             ref: 'Movie'
         },
-        dateTime: {
+        showDateTime: {
             type: Date,
             required: true
         },

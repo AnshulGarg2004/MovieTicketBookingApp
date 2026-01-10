@@ -3,7 +3,6 @@ import Title from '@/components/admin/title';
 import Loading from '@/components/loading';
 import { bookingData } from '@/data/booking';
 import { useAuth } from '@clerk/nextjs';
-import { auth } from '@clerk/nextjs/server';
 import axios from 'axios';
 import React, { useEffect, useState } from 'react'
 import { toast } from 'sonner';
@@ -20,22 +19,19 @@ interface BookingProps {
     cost: string
 }
 
-const Bookings = async() => {
-
+const Bookings = () => {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [bookings, setBookings] = useState<BookingProps[]>([]);
+    const { getToken, isSignedIn } = useAuth();
 
-    const user = await auth();
-    const {getToken} =  useAuth();
-    const token = await getToken();
-
-    const getbookings = async() => {
+    const getbookings = async () => {
         try {
-            const {data} = await axios.get('/api/admin/bookings', {
-                headers : {Authorization : `Bearer ${token}`                }
+            const token = await getToken();
+            const { data } = await axios.get('/api/admin/bookings', {
+                headers: { Authorization: `Bearer ${token}` }
             })
 
-            if(data.success) {
+            if (data.success) {
                 setBookings(data.booking);
                 setIsLoading(false);
             }
@@ -44,11 +40,11 @@ const Bookings = async() => {
         }
     }
 
-    useEffect(() => { 
-        if(user) {
+    useEffect(() => {
+        if (isSignedIn) {
             getbookings();
         }
-    }, [user]);
+    }, [isSignedIn]);
     return !isLoading ? (
         <>
             <Title first='Admin' second='Bookings' />

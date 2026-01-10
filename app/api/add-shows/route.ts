@@ -14,8 +14,10 @@ interface ShowInput {
 export async function POST(req: NextRequest) {
   try {
     await connectDB();
+    console.log("Add shows API called");
 
     const { movieId, showInput, showPrice } = await req.json();
+    console.log("Received data:", { movieId, showInput, showPrice });
 
     if (!movieId || !Array.isArray(showInput) || !showPrice) {
       return NextResponse.json(
@@ -24,10 +26,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    /**
-     * 1️⃣ FIND OR CREATE MOVIE (tmdbId stored separately)
-     */
-    let movie = await Movie.findOne({ tmdbId: movieId });
+    // Find or create movie
+    let movie = await Movie.findOne({ tmdbId: movieId.toString() });
+    console.log("Existing movie found:", !!movie);
 
     if (!movie) {
       if (!process.env.TMDB_API_KEY) {
@@ -37,36 +38,45 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const [movieDetailRes, movieCreditRes] = await Promise.all([
-        axios.get(`https://api.themoviedb.org/3/movie/${movieId}`, {
-          headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` },
-        }),
-        axios.get(`https://api.themoviedb.org/3/movie/${movieId}/credits`, {
-          headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` },
-        }),
-      ]);
+      try {
+        console.log(`Fetching movie ${movieId} from TMDB...`);
+        const [movieDetailRes, movieCreditRes] = await Promise.all([
+          axios.get(`https://api.themoviedb.org/3/movie/${movieId}`, {
+            params: { api_key: process.env.TMDB_API_KEY }
+          }),
+          axios.get(`https://api.themoviedb.org/3/movie/${movieId}/credits`, {
+            params: { api_key: process.env.TMDB_API_KEY }
+          }),
+        ]);
 
-      const movieApiData = movieDetailRes.data;
-      const movieCreditData = movieCreditRes.data;
+        const movieApiData = movieDetailRes.data;
+        const movieCreditData = movieCreditRes.data;
+        console.log("TMDB data received for:", movieApiData.title);
 
-      movie = await Movie.create({
-        tmdbId: movieId, // ✅ CORRECT
-        title: movieApiData.title,
-        description: movieApiData.overview,
-        duration: movieApiData.runtime,
-        release: movieApiData.release_date,
-        casts: movieCreditData.cast
-          .slice(0, 5)
-          .map((cast: any) => cast.name),
-        image: `https://image.tmdb.org/t/p/w500${movieApiData.poster_path}`,
-        genre: movieApiData.genres.map((g: any) => g.name),
-        vote_avg: movieApiData.vote_average,
-      });
+        movie = await Movie.create({
+          tmdbId: movieId.toString(),
+          title: movieApiData.title,
+          description: movieApiData.overview,
+          duration: movieApiData.runtime,
+          release: movieApiData.release_date,
+          casts: movieCreditData.cast
+            .slice(0, 5)
+            .map((cast: any) => cast.name),
+          image: `https://image.tmdb.org/t/p/w500${movieApiData.poster_path}`,
+          genre: movieApiData.genres.map((g: any) => g.name),
+          rating: movieApiData.vote_average,
+        });
+        console.log(`Created movie: ${movie.title}`);
+      } catch (tmdbError: any) {
+        console.error("TMDB API error:", tmdbError.message);
+        return NextResponse.json(
+          { success: false, message: `TMDB API error: ${tmdbError.message}` },
+          { status: 500 }
+        );
+      }
     }
 
-    /**
-     * 2️⃣ CREATE SHOWTIMES (ObjectId + correct field names)
-     */
+    // Create showtimes
     const showsToCreate: any[] = [];
 
     showInput.forEach((show: ShowInput) => {
@@ -74,8 +84,8 @@ export async function POST(req: NextRequest) {
         const dateTime = new Date(`${show.date}T${time}`);
 
         showsToCreate.push({
-          movie: movie._id, // ✅ ObjectId
-          showDateTime: dateTime, // ✅ correct field
+          movie: movie._id,
+          showDateTime: dateTime,
           cost: Number(showPrice),
           occupiedSeats: {},
         });
@@ -89,12 +99,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    await inngest.send({
-      name : 'app/show.added',
-      data : {movieTitle : movie.title}
-    })
-
+    console.log(`Creating ${showsToCreate.length} shows...`);
     const createdShows = await Showtime.insertMany(showsToCreate);
+    console.log(`Successfully created ${createdShows.length} shows`);
 
     return NextResponse.json(
       {
@@ -106,6 +113,7 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error: any) {
+    console.error("Error in add-shows:", error.message, error.stack);
     return NextResponse.json(
       { success: false, message: error.message },
       { status: 500 }

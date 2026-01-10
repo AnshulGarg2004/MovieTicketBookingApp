@@ -1,4 +1,4 @@
-
+'use client'
 import { ArrowRight } from 'lucide-react'
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react'
@@ -8,7 +8,7 @@ import Trailers from './trailer';
 import axios from 'axios';
 import { toast } from 'sonner';
 
-const FeaturedSection = async () => {
+const FeaturedSection = () => {
     const router = useRouter();
     const [shows, setShows] = useState([]);
     useEffect(() => {
@@ -16,7 +16,7 @@ const FeaturedSection = async () => {
             try {
                 const {data} = await axios.get("/api/get-shows");
                 if(data.success) {
-                    setShows(data.show.map((show : any) => (show.movie)));
+                    setShows(data.Show.map((show : any) => (show.movie)));
 
                 }
             } catch (error) {

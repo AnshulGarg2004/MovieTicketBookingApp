@@ -27,7 +27,7 @@ const Booking = () => {
 
   const getMyBookings = async () => {
     try {
-      const { data } = await axios.get("/api/bookings/user");
+      const { data } = await axios.get("/api/booking/user");
 
       if (data.success) {
         setBookings(data.bookings);

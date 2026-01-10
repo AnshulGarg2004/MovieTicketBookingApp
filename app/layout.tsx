@@ -1,4 +1,3 @@
-'use client'
 import { type Metadata } from "next";
 import {
     ClerkProvider,
@@ -10,9 +9,7 @@ import {
 } from '@clerk/nextjs'
 
 import { Geist, Geist_Mono } from "next/font/google";
-import Navbar from "@/components/navbar";
-import { usePathname } from "next/navigation";
-import Footer from "@/components/footer";
+import LayoutWrapper from "@/components/layout-wrapper";
 import "./globals.css";
 import { Toaster } from "sonner";
 
@@ -34,21 +31,6 @@ export default function RootLayout({
 }: Readonly<{
     children: React.ReactNode;
 }>) {
-    const path = usePathname();
-    let isAdminRoute: boolean;
-    let isWelcomeRoute: boolean;
-    if (path.startsWith("/admin")) {
-        isAdminRoute = true;
-    }
-    else {
-        isAdminRoute = false;
-    }
-    if (path === "/") {
-        isWelcomeRoute = true;
-    }
-    else {
-        isWelcomeRoute = false;
-    }
     return (
         <ClerkProvider>
             <html lang="en" className="dark">
@@ -56,10 +38,7 @@ export default function RootLayout({
                     className={`${geistSans.variable} ${geistMono.variable} antialiased`}
                 >
                     <Toaster/>
-                    {!isAdminRoute && !isWelcomeRoute && <Navbar />}
-                    {children}
-                    {!isAdminRoute && !isWelcomeRoute && <Footer />}
-
+                    <LayoutWrapper>{children}</LayoutWrapper>
                 </body>
             </html>
         </ClerkProvider>

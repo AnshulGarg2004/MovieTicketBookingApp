@@ -12,9 +12,7 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import axios from 'axios'
-import { auth } from '@clerk/nextjs/server'
 import { useAuth } from '@clerk/nextjs'
-import { getFavourites } from '@/utils/user'
 
 interface Cast {
   id: number
@@ -54,12 +52,11 @@ const MovieId = () => {
   const [isFavourite, setIsFavourite] = useState(false)
 
   const handleFavourite = async () => {
-    const user = await auth();
     const { getToken } = useAuth();
     const token = await getToken();
 
     try {
-      if (!user) {
+      if (!token) {
         return toast.error("😒Login first");
       }
       const { data } = await axios.post('/api/favorites', { movieId: id }, {
@@ -67,7 +64,7 @@ const MovieId = () => {
       });
 
       if (data.success) {
-        await getFavourites();
+        setIsFavourite(!isFavourite);
         toast.success("Added to favouites");
       }
     } catch (error) {
@@ -80,10 +77,17 @@ const MovieId = () => {
     const load = async () => {
       try {
         const { data } = await axios.get(`/api/get-shows/${id}`)
+        console.log('Movie API response:', data);
         if (data.success) {
-          setShow(data);
+          // Combine movie data with shows data
+          const movieWithShows = {
+            ...data.movie,
+            shows: data.shows || {}
+          };
+          setShow(movieWithShows);
         }
       } catch (e) {
+        console.error('API error:', e);
         return toast.error('Failed to fetch movie')
       }
     }
@@ -101,7 +105,7 @@ const MovieId = () => {
       {/* MOVIE HEADER */}
       <div className="flex flex-col gap-8 p-10 mx-auto md:flex-row max-w-6xl mt-20">
         <Image
-          src={show.image}
+          src={show.image || '/placeholder-movie.jpg'}
           alt={show.title}
           width={400}
           height={300}
@@ -111,18 +115,18 @@ const MovieId = () => {
         <div className="relative flex flex-col gap-3">
           <BlurCircle top="-100px" left="-100px" />
 
-          <h1 className="text-4xl font-bold my-4">{show.title}</h1>
+          <h1 className="text-4xl font-bold my-4">{show.title || 'Movie Title'}</h1>
 
           <p className="flex items-center gap-2">
             <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-            {show.rating}
+            {show.rating || 'N/A'}
           </p>
 
-          <p className="text-gray-400 max-w-xl">{show.description}</p>
+          <p className="text-gray-400 max-w-xl">{show.description || 'No description available'}</p>
 
           <p className="flex items-center gap-4 text-sm text-gray-300">
-            <Clock /> {show.duration}
-            <Calendar /> {show.release}
+            <Clock /> {show.duration || 'N/A'} min
+            <Calendar /> {show.release ? new Date(show.release).getFullYear() : 'N/A'}
           </p>
 
           <div className="flex gap-4 mt-6 flex-wrap">
@@ -139,7 +143,7 @@ const MovieId = () => {
             </Link>
 
             <button
-              onClick={() => setIsFavourite(!isFavourite)}
+              onClick={handleFavourite}
               className="p-3 rounded-full bg-neutral-700 active:scale-95"
             >
               <Heart
@@ -155,11 +159,33 @@ const MovieId = () => {
       <h2 className="text-3xl text-center mt-24 mb-10">Casts</h2>
 
       <div className="flex gap-20 justify-center mb-16">
-        <AnimatedTooltip items={show.casts.slice(0, 10)} />
+        <AnimatedTooltip items={show.casts?.slice(0, 10) || []} />
       </div>
 
       {/* DATE & TIME SELECTION */}
-      <DateSelect movieId={show._id} showtimes={show.showtimes} />
+      {(() => {
+        console.log('Show data:', show);
+        console.log('Show.shows:', show.shows);
+        return show.shows && Object.keys(show.shows).length > 0 ? (
+          <DateSelect 
+            movieId={show._id} 
+            showtimes={Object.entries(show.shows).map(([date, times]: [string, any]) => ({
+              id: date,
+              date,
+              times: times.map((t: any) => ({
+                time: t.time,
+                showId: t.id,
+                cost: t.cost
+              }))
+            }))}
+          />
+        ) : (
+          <div className="text-center py-10">
+            <p className="text-gray-400">No showtimes available for this movie</p>
+            <p className="text-sm text-gray-500 mt-2">This movie needs to be added through the admin panel to have showtimes</p>
+          </div>
+        )
+      })()}
 
       {/* RECOMMENDED MOVIES */}
       <div className="mt-24 mb-20">

@@ -1,9 +1,10 @@
 import mongoose from "mongoose";
 
 const movieSchema = new mongoose.Schema({
-    _id: {
+    tmdbId: {
         type: String,
         required: true,
+        unique: true
     },
     title: {
         type: String,
@@ -11,7 +12,7 @@ const movieSchema = new mongoose.Schema({
     },
     image: {
         type: String,
-        required: true,
+        required: false,
     },
     trailer: {
         type: String,

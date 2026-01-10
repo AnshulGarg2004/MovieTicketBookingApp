@@ -10,9 +10,13 @@ const Movie = () => {
 
     useEffect(() => {
         const fetchShows = async() => {
-            const {data} = await axios.get('/api/get-shows');
-            if(data.success) {
-                setShows(data.Show.map((s : any) => s.movie));
+            try {
+                const {data} = await axios.get('/api/get-shows');
+                if(data.success) {
+                    setShows(data.Show.map((s : any) => s.movie));
+                }
+            } catch (error) {
+                console.error('Error fetching shows:', error);
             }
         }
         fetchShows();

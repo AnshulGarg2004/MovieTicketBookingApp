@@ -40,8 +40,8 @@ const AdminSidebar = () => {
         <aside className="h-[calc(100vh-64px)] flex flex-col items-center w-60 pt-8 border-r border-gray-300/20 text-sm">
             {/* User */}
             <Image
-                src={user.image}
-                alt="admin"
+                src={user.image || "/placeholder-avatar.png"}
+                alt={user.name ? `${user.name} ${user.lastName}` : "Admin user"}
                 width={56}
                 height={56}
                 className="rounded-full"

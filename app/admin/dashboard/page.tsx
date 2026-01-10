@@ -4,7 +4,6 @@ import BlurCircle from '@/components/blur-circle'
 import Loading from '@/components/loading'
 import { Dashboard } from '@/data/dashboard'
 import { useAuth } from '@clerk/nextjs'
-import { auth } from '@clerk/nextjs/server'
 import axios from 'axios'
 import { ChartLineIcon, CircleDollarSignIcon, PlayCircleIcon, StarIcon, UserIcon } from 'lucide-react'
 import Image from 'next/image'
@@ -32,13 +31,11 @@ interface DashboardProps {
   totalUser: number
 }
 
-const AdminDashboard = async() => {
+const AdminDashboard = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [dashboardData, setDashboardData] = useState<DashboardProps>({ totalBookings: 0, totalRevenue: '₹ 0', activeMovies: [], totalUser: 0 })
 
-  const { getToken } = useAuth();
-  const token = getToken();
-
+  const { getToken, isSignedIn } = useAuth();
 
   useEffect(() => {
     setDashboardData(Dashboard)
@@ -51,10 +48,10 @@ const AdminDashboard = async() => {
     { title: 'Active Movies', value: dashboardData.activeMovies.length, icon: PlayCircleIcon },
     { title: 'Total User', value: dashboardData.totalUser, icon: UserIcon }
   ]
-  const user = await auth();
-  const fetchDashboardData = async () => {
 
+  const fetchDashboardData = async () => {
     try {
+      const token = await getToken();
       const { data } = await axios.get('/api/admin/dashboard', {
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -71,10 +68,10 @@ const AdminDashboard = async() => {
   }
 
   useEffect(() => {
-    if (user) {
+    if (isSignedIn) {
       fetchDashboardData();
     }
-  }, [user])
+  }, [isSignedIn])
 
   return !isLoading ? (
     <>

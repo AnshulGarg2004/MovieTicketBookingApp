@@ -275,7 +275,6 @@
 import BlurCircle from '@/components/blur-circle'
 import Loading from '@/components/loading'
 import { useAuth } from '@clerk/nextjs'
-import { auth } from '@clerk/nextjs/server'
 import axios from 'axios'
 import { ArrowRightIcon, Calendar, Clock } from 'lucide-react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
@@ -307,6 +306,7 @@ const SeatLayout = () => {
   const { id, showid } = useParams<{ id: string; showid: string }>()
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { getToken, isSignedIn } = useAuth()
 
   const date = searchParams.get('date')
   const time = searchParams.get('time')
@@ -329,27 +329,32 @@ const SeatLayout = () => {
   useEffect(() => {
     const load = async () => {
       try {
+        console.log(`Fetching show data for movie ${id}`);
         const { data } = await axios.get(`/api/get-shows/${id}`)
+        console.log('API response:', data);
+        
         if (!data.success) {
           toast.error(data.message || 'Failed to load shows')
           return
         }
 
         setMovie(data.movie)
-        setShows(data.shows)
+        setShows(data.shows || {})
 
         // Find selected show
-        const timesForDate = data.shows[date] || []
+        const timesForDate = data.shows?.[date] || []
         const found = timesForDate.find((t: TimeEntry) => t.time === time || t.id === showid)
 
         if (!found) {
+          console.log('Show not found for:', { date, time, showid });
           toast.error('Show not found')
           return
         }
 
         setCurrentShowMeta({ showId: found.id, cost: found.cost })
         setOccupiedSeats(found.occupiedSeats || [])
-      } catch {
+      } catch (error: any) {
+        console.error('Fetch error:', error);
         toast.error('Failed to fetch show data')
       } finally {
         setLoading(false)
@@ -391,28 +396,44 @@ const SeatLayout = () => {
 
 
     const bookTicket = async() => {
-        const user = await auth()
-        const {getToken} = useAuth();
-        const token = await getToken();
         try {
-            if(!user) {
-                toast.warning("😒Login first");
-                
+            if(!isSignedIn) {
+                return toast.warning("😒Login first");
             }
             if(!selectedSeats.length) {
-                    return toast.error("😒Select seats first")
-                }
+                return toast.error("😒Select seats first")
+            }
+            if(!currentShowMeta) {
+                return toast.error("Show information missing")
+            }
 
-                const {data} = await axios.post('/api/booking', {showid, selectedSeats}, {
-                    headers : {Authorization : `Bearer ${token}`}
-                })
+            const token = await getToken();
+            const payload = {
+                showId: currentShowMeta.showId,
+                seats: selectedSeats,
+                movieId: movie?._id,
+                ticketQty: selectedSeats.length,
+                movieTitle: movie?.title,
+                movieImage: movie?.image,
+                duration: movie?.duration,
+                showDateTime: `${date}T${selectedTime}`
+            };
+            
+            console.log('Booking payload:', payload);
+            
+            const {data} = await axios.post('/api/booking', payload)
+            console.log('Booking response:', data);
 
-                if(data.success) {
-                    window.location.href = data.url;
-                }
+            if(data.success) {
+                console.log('Redirecting to:', data.url);
+                window.location.href = data.url;
+            } else {
+                toast.error(data.message || 'Booking failed');
+            }
 
-        } catch (error  :any) {
-         return toast.error(error.message)    
+        } catch (error: any) {
+            console.error('Booking error:', error.response?.data || error.message);
+            return toast.error(error.response?.data?.message || error.message)    
         }
     }
 
@@ -430,10 +451,13 @@ const SeatLayout = () => {
             key={seatId}
             disabled={isOccupied}
             onClick={() => handleSeatClick(seatId)}
-            className={`h-8 w-8 rounded border text-xs
+            className={`h-8 w-8 rounded border text-xs transition-colors
               ${
-                selectedSeats.includes(seatId) && 'bg-rose-500/60 text-white'}
-                 ${occupiedSeats.includes(seatId) && 'opacity-50'}
+                isOccupied 
+                  ? 'bg-red-500 text-white cursor-not-allowed opacity-50' 
+                  : isSelected 
+                    ? 'bg-rose-500 text-white border-rose-500' 
+                    : 'bg-transparent border-gray-400 hover:border-rose-500'
               }`}
           >
             {seatId}
@@ -485,6 +509,22 @@ const SeatLayout = () => {
 
       {/* SEAT LAYOUT */}
       <div className="flex flex-col items-center mt-10 mb-40 text-xs text-gray-300">
+        {/* LEGEND */}
+        <div className="flex gap-6 mb-6 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-transparent border border-gray-400 rounded"></div>
+            <span>Available</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-rose-500 rounded"></div>
+            <span>Selected</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-red-500 rounded"></div>
+            <span>Occupied</span>
+          </div>
+        </div>
+        
         <div className="grid grid-cols-2 md:grid-cols-1 gap-8 md:gap-1 mb-6">
           {groupRows[0].map(row => renderSeats(row))}
         </div>
